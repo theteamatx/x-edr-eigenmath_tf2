@@ -31,14 +31,14 @@
 
 #include <sstream>
 
-#include "eigenmath/pose3.h"
-#include "eigenmath/pose3_utils.h"
+#include "absl/hash/hash.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
-#include "absl/hash/hash.h"
+#include "eigenmath/pose3.h"
+#include "eigenmath/pose3_utils.h"
 #include "third_party/eigenmath_tf2/time_cache.h"
 #include "third_party/eigenmath_tf2/transform_storage.h"
 
@@ -64,27 +64,30 @@ void StripSlash(std::string_view* in) {
 
 }  // namespace
 
-#define EIGENMATH_TF2_RETURN_IF_ERROR(expr, msg)               \
-  { absl::Status status = expr; if (!status.ok()) {            \
-    return absl::Status(status.code(),                         \
-                        absl::StrCat(status.message(), msg));  \
-  } }
-  
-#define EIGENMATH_TF2_ASSIGN_OR_RETURN_IMPL(statusor, lhs, expr, msg)     \
-  auto statusor = (expr);                                                 \
-  if (!statusor.ok()) {                                                   \
-    return absl::Status(statusor.status().code(),                         \
-                        absl::StrCat(statusor.status().message(), msg));  \
-  }                                                                       \
+#define EIGENMATH_TF2_RETURN_IF_ERROR(expr, msg)                               \
+  {                                                                            \
+    absl::Status status = expr;                                                \
+    if (!status.ok()) {                                                        \
+      return absl::Status(status.code(), absl::StrCat(status.message(), msg)); \
+    }                                                                          \
+  }
+
+#define EIGENMATH_TF2_ASSIGN_OR_RETURN_IMPL(statusor, lhs, expr, msg)    \
+  auto statusor = (expr);                                                \
+  if (!statusor.ok()) {                                                  \
+    return absl::Status(statusor.status().code(),                        \
+                        absl::StrCat(statusor.status().message(), msg)); \
+  }                                                                      \
   lhs = (*std::move(statusor))
-  
+
 #define EIGENMATH_TF2_ASSIGN_OR_RETURN_STR_CONCAT_INNER(x, y) x##y
 #define EIGENMATH_TF2_ASSIGN_OR_RETURN_STR_CONCAT(x, y) \
   EIGENMATH_TF2_ASSIGN_OR_RETURN_STR_CONCAT_INNER(x, y)
 
-#define EIGENMATH_TF2_ASSIGN_OR_RETURN(lhs, expr, msg) \
-  EIGENMATH_TF2_ASSIGN_OR_RETURN_IMPL( \
-    EIGENMATH_TF2_ASSIGN_OR_RETURN_STR_CONCAT(status_or_value, __LINE__), lhs, expr, msg)
+#define EIGENMATH_TF2_ASSIGN_OR_RETURN(lhs, expr, msg)                      \
+  EIGENMATH_TF2_ASSIGN_OR_RETURN_IMPL(                                      \
+      EIGENMATH_TF2_ASSIGN_OR_RETURN_STR_CONCAT(status_or_value, __LINE__), \
+      lhs, expr, msg)
 
 const absl::Duration BufferCore::kDefaultCacheTime = absl::Seconds(10);
 
@@ -137,9 +140,8 @@ void BufferCore::Clear() {
 }
 
 absl::Status BufferCore::SetTransform(
-    const Pose3d& pose, absl::Time stamp,
-    std::string_view parent_frame_id, std::string_view child_frame_id,
-    std::string_view authority, bool is_static,
+    const Pose3d& pose, absl::Time stamp, std::string_view parent_frame_id,
+    std::string_view child_frame_id, std::string_view authority, bool is_static,
     absl::Duration max_interpolation_duration, bool invert_when_interpolating) {
   StripSlash(&parent_frame_id);
   StripSlash(&child_frame_id);
@@ -311,8 +313,11 @@ absl::Status BufferCore::WalkToTopParent(F* f, absl::Time time,
       break;
     }
 
-    EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID parent, f->Gather(cache, time),
-                     absl::StrCat("while looking up transform between frames '", *LookupFrameString(target_id), "' and '", *LookupFrameString(source_id), "'"));
+    EIGENMATH_TF2_ASSIGN_OR_RETURN(
+        CompactFrameID parent, f->Gather(cache, time),
+        absl::StrCat("while looking up transform between frames '",
+                     *LookupFrameString(target_id), "' and '",
+                     *LookupFrameString(source_id), "'"));
 
     // Early out... source frame is a direct parent of the target frame
     if (frame == source_id) {
@@ -333,14 +338,17 @@ absl::Status BufferCore::WalkToTopParent(F* f, absl::Time time,
   }
 
   if (frame != top_parent) {
-    EIGENMATH_TF2_RETURN_IF_ERROR(extrapolation_might_have_occurred_status, absl::StrCat("while looking up transform between frames '", *LookupFrameString(target_id), "' and '", *LookupFrameString(source_id), "'"));
-
-    return absl::InternalError(
-        absl::StrCat("Could not find a connection between '",
+    EIGENMATH_TF2_RETURN_IF_ERROR(
+        extrapolation_might_have_occurred_status,
+        absl::StrCat("while looking up transform between frames '",
                      *LookupFrameString(target_id), "' and '",
-                     *LookupFrameString(source_id),
-                     "' because they are not part of the same tree. Tf has two "
-                     "or more unconnected trees."));
+                     *LookupFrameString(source_id), "'"));
+
+    return absl::InternalError(absl::StrCat(
+        "Could not find a connection between '", *LookupFrameString(target_id),
+        "' and '", *LookupFrameString(source_id),
+        "' because they are not part of the same tree. Tf has two "
+        "or more unconnected trees."));
   }
 
   f->Finalize(FullPath, time);
@@ -406,18 +414,33 @@ absl::StatusOr<Pose3d> BufferCore::LookupTransform(
     absl::Time* source_transform_time) const {
   absl::ReaderMutexLock lock(&frame_mutex_);
 
-  EIGENMATH_TF2_RETURN_IF_ERROR(ValidatedFrameId(target_frame).status(), absl::StrCat("LookupTransform: Invalid target frame-id ('", target_frame, "')"));
-  EIGENMATH_TF2_RETURN_IF_ERROR(ValidatedFrameId(source_frame).status(), absl::StrCat("LookupTransform: Invalid source frame-id ('", source_frame, "')"));
-  EIGENMATH_TF2_RETURN_IF_ERROR(ValidatedFrameId(fixed_frame).status(), absl::StrCat("LookupTransform: Invalid fixed frame-id ('", fixed_frame, "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      ValidatedFrameId(target_frame).status(),
+      absl::StrCat("LookupTransform: Invalid target frame-id ('", target_frame,
+                   "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      ValidatedFrameId(source_frame).status(),
+      absl::StrCat("LookupTransform: Invalid source frame-id ('", source_frame,
+                   "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      ValidatedFrameId(fixed_frame).status(),
+      absl::StrCat("LookupTransform: Invalid fixed frame-id ('", fixed_frame,
+                   "')"));
 
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(Pose3d temp1,
-                   LookupTransformNoLock(fixed_frame, source_frame, source_time,
-                                         source_transform_time),
-                   absl::StrCat("LookupTransform: Could not find transform fixed ('", fixed_frame, "') -> source ('", source_frame, "') at time ", absl::FormatTime(source_time)));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(Pose3d temp2,
-                   LookupTransformNoLock(target_frame, fixed_frame, target_time,
-                                         target_transform_time),
-                   absl::StrCat("LookupTransform: Could not find transform target ('", target_frame, "') -> fixed ('", fixed_frame, "') at time ", absl::FormatTime(target_time)));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      Pose3d temp1,
+      LookupTransformNoLock(fixed_frame, source_frame, source_time,
+                            source_transform_time),
+      absl::StrCat("LookupTransform: Could not find transform fixed ('",
+                   fixed_frame, "') -> source ('", source_frame, "') at time ",
+                   absl::FormatTime(source_time)));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      Pose3d temp2,
+      LookupTransformNoLock(target_frame, fixed_frame, target_time,
+                            target_transform_time),
+      absl::StrCat("LookupTransform: Could not find transform target ('",
+                   target_frame, "') -> fixed ('", fixed_frame, "') at time ",
+                   absl::FormatTime(target_time)));
 
   return Pose3d(temp2 * temp1);
 }
@@ -428,24 +451,36 @@ absl::StatusOr<Pose2d> BufferCore::LookupTransform2d(
     absl::Time* transform_time) const {
   absl::ReaderMutexLock lock(&frame_mutex_);
 
-  EIGENMATH_TF2_RETURN_IF_ERROR(ValidatedFrameId(target_frame).status(), absl::StrCat("LookupTransform2d: Invalid target frame-id ('", target_frame, "')"));
-  EIGENMATH_TF2_RETURN_IF_ERROR(ValidatedFrameId(source_frame).status(), absl::StrCat("LookupTransform2d: Invalid source frame-id ('", source_frame, "')"));
-  EIGENMATH_TF2_RETURN_IF_ERROR(ValidatedFrameId(horizontal_frame).status(), absl::StrCat("LookupTransform2d: Invalid horizontal frame-id ('", horizontal_frame, "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      ValidatedFrameId(target_frame).status(),
+      absl::StrCat("LookupTransform2d: Invalid target frame-id ('",
+                   target_frame, "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      ValidatedFrameId(source_frame).status(),
+      absl::StrCat("LookupTransform2d: Invalid source frame-id ('",
+                   source_frame, "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      ValidatedFrameId(horizontal_frame).status(),
+      absl::StrCat("LookupTransform2d: Invalid horizontal frame-id ('",
+                   horizontal_frame, "')"));
 
   EIGENMATH_TF2_ASSIGN_OR_RETURN(
       Pose3d source_pose3_horiz,
       LookupTransformNoLock(source_frame, horizontal_frame, query_time,
                             transform_time),
-      absl::StrCat("LookupTransform2d: Could not find transform horizontal ('", horizontal_frame, "') -> source ('", source_frame, "') at time ", absl::FormatTime(query_time)));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(Pose3d target_pose3_horiz,
-                   LookupTransformNoLock(target_frame, horizontal_frame,
-                                         query_time, transform_time),
-                   absl::StrCat("LookupTransform2d: Could not find transform target ('", target_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(query_time)));
+      absl::StrCat("LookupTransform2d: Could not find transform horizontal ('",
+                   horizontal_frame, "') -> source ('", source_frame,
+                   "') at time ", absl::FormatTime(query_time)));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      Pose3d target_pose3_horiz,
+      LookupTransformNoLock(target_frame, horizontal_frame, query_time,
+                            transform_time),
+      absl::StrCat("LookupTransform2d: Could not find transform target ('",
+                   target_frame, "') -> horizontal ('", horizontal_frame,
+                   "') at time ", absl::FormatTime(query_time)));
 
-  const Pose2d source_pose2_horiz =
-      ToPose2XY(source_pose3_horiz);
-  const Pose2d target_pose2_horiz =
-      ToPose2XY(target_pose3_horiz);
+  const Pose2d source_pose2_horiz = ToPose2XY(source_pose3_horiz);
+  const Pose2d target_pose2_horiz = ToPose2XY(target_pose3_horiz);
 
   return target_pose2_horiz * source_pose2_horiz.inverse();
 }
@@ -454,18 +489,26 @@ absl::StatusOr<Pose2d> BufferCore::LookupTransform2d(
     std::string_view target_frame, const absl::Time& target_time,
     std::string_view source_frame, const absl::Time& source_time,
     std::string_view fixed_frame, absl::string_view horizontal_frame,
-    absl::Time* target_transform_time, absl::Time* source_transform_time) const {
+    absl::Time* target_transform_time,
+    absl::Time* source_transform_time) const {
   absl::ReaderMutexLock lock(&frame_mutex_);
 
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID target_id, ValidatedFrameId(target_frame),
-                   absl::StrCat("LookupTransform2d: Invalid target frame-id ('", target_frame, "')"));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID source_id, ValidatedFrameId(source_frame),
-                   absl::StrCat("LookupTransform2d: Invalid source frame-id ('", source_frame, "')"));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID fixed_id, ValidatedFrameId(fixed_frame),
-                   absl::StrCat("LookupTransform2d: Invalid fixed frame-id ('", fixed_frame, "')"));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID horizontal_id,
-                   ValidatedFrameId(horizontal_frame),
-                   absl::StrCat("LookupTransform2d: Invalid horizontal frame-id ('", horizontal_frame, "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID target_id, ValidatedFrameId(target_frame),
+      absl::StrCat("LookupTransform2d: Invalid target frame-id ('",
+                   target_frame, "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID source_id, ValidatedFrameId(source_frame),
+      absl::StrCat("LookupTransform2d: Invalid source frame-id ('",
+                   source_frame, "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID fixed_id, ValidatedFrameId(fixed_frame),
+      absl::StrCat("LookupTransform2d: Invalid fixed frame-id ('", fixed_frame,
+                   "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID horizontal_id, ValidatedFrameId(horizontal_frame),
+      absl::StrCat("LookupTransform2d: Invalid horizontal frame-id ('",
+                   horizontal_frame, "')"));
 
   EIGENMATH_TF2_ASSIGN_OR_RETURN(
       int horiz_count_in_source_path,
@@ -482,20 +525,25 @@ absl::StatusOr<Pose2d> BufferCore::LookupTransform2d(
         Pose3d source_pose3_horiz,
         LookupTransformNoLock(source_frame, horizontal_frame, source_time,
                               &actual_source_time),
-        absl::StrCat("LookupTransform2d: Could not find transform source ('", source_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(source_time)));
+        absl::StrCat("LookupTransform2d: Could not find transform source ('",
+                     source_frame, "') -> horizontal ('", horizontal_frame,
+                     "') at time ", absl::FormatTime(source_time)));
     EIGENMATH_TF2_ASSIGN_OR_RETURN(
         Pose3d fixed_pose3_horiz,
         LookupTransformNoLock(fixed_frame, horizontal_frame, actual_source_time,
                               source_transform_time),
-        absl::StrCat("LookupTransform2d: Could not find transform fixed ('", fixed_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(actual_source_time)));
+        absl::StrCat("LookupTransform2d: Could not find transform fixed ('",
+                     fixed_frame, "') -> horizontal ('", horizontal_frame,
+                     "') at time ", absl::FormatTime(actual_source_time)));
     EIGENMATH_TF2_ASSIGN_OR_RETURN(
         Pose3d target_pose3_fixed,
         LookupTransformNoLock(target_frame, fixed_frame, target_time,
                               target_transform_time),
-        absl::StrCat("LookupTransform2d: Could not find transform target ('", target_frame, "') -> fixed ('", fixed_frame, "') at time ", absl::FormatTime(target_time)));
+        absl::StrCat("LookupTransform2d: Could not find transform target ('",
+                     target_frame, "') -> fixed ('", fixed_frame, "') at time ",
+                     absl::FormatTime(target_time)));
 
-    const Pose2d source_pose2_horiz =
-        ToPose2XY(source_pose3_horiz);
+    const Pose2d source_pose2_horiz = ToPose2XY(source_pose3_horiz);
     const Pose2d target_pose2_horiz =
         ToPose2XY(target_pose3_fixed * fixed_pose3_horiz);
 
@@ -506,55 +554,67 @@ absl::StatusOr<Pose2d> BufferCore::LookupTransform2d(
         Pose3d target_pose3_horiz,
         LookupTransformNoLock(target_frame, horizontal_frame, target_time,
                               &actual_target_time),
-        absl::StrCat("LookupTransform2d: Could not find transform target ('", target_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(target_time)));
+        absl::StrCat("LookupTransform2d: Could not find transform target ('",
+                     target_frame, "') -> horizontal ('", horizontal_frame,
+                     "') at time ", absl::FormatTime(target_time)));
     EIGENMATH_TF2_ASSIGN_OR_RETURN(
         Pose3d fixed_pose3_horiz,
         LookupTransformNoLock(fixed_frame, horizontal_frame, actual_target_time,
                               target_transform_time),
-        absl::StrCat("LookupTransform2d: Could not find transform fixed ('", fixed_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(actual_target_time)));
+        absl::StrCat("LookupTransform2d: Could not find transform fixed ('",
+                     fixed_frame, "') -> horizontal ('", horizontal_frame,
+                     "') at time ", absl::FormatTime(actual_target_time)));
     EIGENMATH_TF2_ASSIGN_OR_RETURN(
         Pose3d source_pose3_fixed,
         LookupTransformNoLock(source_frame, fixed_frame, source_time,
                               source_transform_time),
-        absl::StrCat("LookupTransform2d: Could not find transform source ('", source_frame, "') -> fixed ('", fixed_frame, "') at time ", absl::FormatTime(source_time)));
+        absl::StrCat("LookupTransform2d: Could not find transform source ('",
+                     source_frame, "') -> fixed ('", fixed_frame, "') at time ",
+                     absl::FormatTime(source_time)));
 
     const Pose2d source_pose2_horiz =
         ToPose2XY(source_pose3_fixed * fixed_pose3_horiz);
-    const Pose2d target_pose2_horiz =
-        ToPose2XY(target_pose3_horiz);
+    const Pose2d target_pose2_horiz = ToPose2XY(target_pose3_horiz);
 
     return target_pose2_horiz * source_pose2_horiz.inverse();
   }
 
   absl::Time actual_source_time = absl::InfinitePast();
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(Pose3d source_pose3_horiz,
-                   LookupTransformNoLock(source_frame, horizontal_frame,
-                                         source_time, &actual_source_time),
-                   absl::StrCat("LookupTransform2d: Could not find transform source ('", source_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(source_time)));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      Pose3d source_pose3_horiz,
+      LookupTransformNoLock(source_frame, horizontal_frame, source_time,
+                            &actual_source_time),
+      absl::StrCat("LookupTransform2d: Could not find transform source ('",
+                   source_frame, "') -> horizontal ('", horizontal_frame,
+                   "') at time ", absl::FormatTime(source_time)));
   EIGENMATH_TF2_ASSIGN_OR_RETURN(
       Pose3d fixed_pose3_horiz_at_source,
       LookupTransformNoLock(fixed_frame, horizontal_frame, actual_source_time,
                             source_transform_time),
-      absl::StrCat("LookupTransform2d: Could not find transform fixed ('", fixed_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(actual_source_time)));
+      absl::StrCat("LookupTransform2d: Could not find transform fixed ('",
+                   fixed_frame, "') -> horizontal ('", horizontal_frame,
+                   "') at time ", absl::FormatTime(actual_source_time)));
 
   absl::Time actual_target_time = absl::InfinitePast();
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(Pose3d target_pose3_horiz,
-                   LookupTransformNoLock(target_frame, horizontal_frame,
-                                         target_time, &actual_target_time),
-                   absl::StrCat("LookupTransform2d: Could not find transform target ('", target_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(target_time)));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      Pose3d target_pose3_horiz,
+      LookupTransformNoLock(target_frame, horizontal_frame, target_time,
+                            &actual_target_time),
+      absl::StrCat("LookupTransform2d: Could not find transform target ('",
+                   target_frame, "') -> horizontal ('", horizontal_frame,
+                   "') at time ", absl::FormatTime(target_time)));
   EIGENMATH_TF2_ASSIGN_OR_RETURN(
       Pose3d fixed_pose3_horiz_at_target,
       LookupTransformNoLock(fixed_frame, horizontal_frame, actual_target_time,
                             target_transform_time),
-      absl::StrCat("LookupTransform2d: Could not find transform fixed ('", fixed_frame, "') -> horizontal ('", horizontal_frame, "') at time ", absl::FormatTime(actual_target_time)));
+      absl::StrCat("LookupTransform2d: Could not find transform fixed ('",
+                   fixed_frame, "') -> horizontal ('", horizontal_frame,
+                   "') at time ", absl::FormatTime(actual_target_time)));
 
-  const Pose2d source_pose2_horiz =
-      ToPose2XY(source_pose3_horiz);
-  const Pose2d horiz_at_target_pose2_horiz_at_source =
-      ToPose2XY(fixed_pose3_horiz_at_target.inverse() *
-                           fixed_pose3_horiz_at_source);
-  const Pose2d target_pose2_horiz =
-      ToPose2XY(target_pose3_horiz);
+  const Pose2d source_pose2_horiz = ToPose2XY(source_pose3_horiz);
+  const Pose2d horiz_at_target_pose2_horiz_at_source = ToPose2XY(
+      fixed_pose3_horiz_at_target.inverse() * fixed_pose3_horiz_at_source);
+  const Pose2d target_pose2_horiz = ToPose2XY(target_pose3_horiz);
 
   return target_pose2_horiz * horiz_at_target_pose2_horiz_at_source *
          source_pose2_horiz.inverse();
@@ -583,13 +643,18 @@ absl::StatusOr<Pose3d> BufferCore::LookupTransformNoLock(
   }
 
   // Identity case does not need to be validated above
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID target_id, ValidatedFrameId(target_frame),
-                   absl::StrCat("LookupTransform: Invalid target frame-id ('", target_frame, "')"));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID source_id, ValidatedFrameId(source_frame),
-                   absl::StrCat("LookupTransform: Invalid source frame-id ('", source_frame, "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID target_id, ValidatedFrameId(target_frame),
+      absl::StrCat("LookupTransform: Invalid target frame-id ('", target_frame,
+                   "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID source_id, ValidatedFrameId(source_frame),
+      absl::StrCat("LookupTransform: Invalid source frame-id ('", source_frame,
+                   "')"));
 
   TransformAccum accum;
-  EIGENMATH_TF2_RETURN_IF_ERROR(WalkToTopParent(&accum, query_time, target_id, source_id), "");
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      WalkToTopParent(&accum, query_time, target_id, source_id), "");
 
   if (transform_time) {
     *transform_time = accum.time;
@@ -603,7 +668,8 @@ struct CountFrameAccum {
 
   absl::StatusOr<CompactFrameID> Gather(const TimeCacheInterface* cache,
                                         absl::Time time) {
-    EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID child_id, cache->GetChild(time), "");
+    EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID child_id,
+                                   cache->GetChild(time), "");
     if (child_id == sought_frame) {
       ++count;
     }
@@ -631,7 +697,8 @@ absl::StatusOr<int> BufferCore::CountFrameNoLock(CompactFrameID target_id,
   }
 
   CountFrameAccum accum(sought_id);
-  EIGENMATH_TF2_RETURN_IF_ERROR(WalkToTopParent(&accum, time, target_id, source_id), "");
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      WalkToTopParent(&accum, time, target_id, source_id), "");
 
   return accum.count;
 }
@@ -674,10 +741,12 @@ absl::Status BufferCore::CanTransform(std::string_view target_frame,
 
   EIGENMATH_TF2_ASSIGN_OR_RETURN(
       CompactFrameID target_id, ValidatedFrameId(target_frame),
-      absl::StrCat("CanTransform: Invalid target frame-id ('", target_frame, "')"));
+      absl::StrCat("CanTransform: Invalid target frame-id ('", target_frame,
+                   "')"));
   EIGENMATH_TF2_ASSIGN_OR_RETURN(
       CompactFrameID source_id, ValidatedFrameId(source_frame),
-      absl::StrCat("CanTransform: Invalid source frame-id ('", source_frame, "')"));
+      absl::StrCat("CanTransform: Invalid source frame-id ('", source_frame,
+                   "')"));
 
   return CanTransformNoLock(target_id, source_id, time);
 }
@@ -687,12 +756,23 @@ absl::Status BufferCore::CanTransform(std::string_view target_frame,
                                       std::string_view source_frame,
                                       const absl::Time& source_time,
                                       std::string_view fixed_frame) const {
-  EIGENMATH_TF2_RETURN_IF_ERROR(CheckFrameId(target_frame), absl::StrCat("CanTransform: Invalid target frame-id ('", target_frame, "')"));
-  EIGENMATH_TF2_RETURN_IF_ERROR(CheckFrameId(source_frame), absl::StrCat("CanTransform: Invalid source frame-id ('", source_frame, "')"));
-  EIGENMATH_TF2_RETURN_IF_ERROR(CheckFrameId(fixed_frame), absl::StrCat("CanTransform: Invalid fixed frame-id ('", fixed_frame, "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      CheckFrameId(target_frame),
+      absl::StrCat("CanTransform: Invalid target frame-id ('", target_frame,
+                   "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      CheckFrameId(source_frame),
+      absl::StrCat("CanTransform: Invalid source frame-id ('", source_frame,
+                   "')"));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      CheckFrameId(fixed_frame),
+      absl::StrCat("CanTransform: Invalid fixed frame-id ('", fixed_frame,
+                   "')"));
 
-  EIGENMATH_TF2_RETURN_IF_ERROR(CanTransform(target_frame, fixed_frame, target_time), "");
-  EIGENMATH_TF2_RETURN_IF_ERROR(CanTransform(fixed_frame, source_frame, source_time), "");
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      CanTransform(target_frame, fixed_frame, target_time), "");
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      CanTransform(fixed_frame, source_frame, source_time), "");
   return absl::OkStatus();
 }
 
@@ -701,10 +781,14 @@ absl::Status BufferCore::GetTransformTimeInterval(
     absl::Time* oldest_time, absl::Time* latest_time) const {
   absl::ReaderMutexLock lock(&frame_mutex_);
 
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID target_id, ValidatedFrameId(target_frame),
-                   absl::StrCat("GetTransformTimeInterval: Invalid target frame-id ('", target_frame, "')"));
-  EIGENMATH_TF2_ASSIGN_OR_RETURN(CompactFrameID source_id, ValidatedFrameId(source_frame),
-                   absl::StrCat("GetTransformTimeInterval: Invalid source frame-id ('", source_frame, "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID target_id, ValidatedFrameId(target_frame),
+      absl::StrCat("GetTransformTimeInterval: Invalid target frame-id ('",
+                   target_frame, "')"));
+  EIGENMATH_TF2_ASSIGN_OR_RETURN(
+      CompactFrameID source_id, ValidatedFrameId(source_frame),
+      absl::StrCat("GetTransformTimeInterval: Invalid source frame-id ('",
+                   source_frame, "')"));
 
   return GetCommonTimeInterval(target_id, source_id, oldest_time, latest_time);
 }
@@ -755,8 +839,7 @@ absl::StatusOr<absl::string_view> BufferCore::LookupFrameString(
   return absl::string_view(it->second);
 }
 
-absl::Status BufferCore::RemoveTransformFrame(
-    std::string_view child_frame_id) {
+absl::Status BufferCore::RemoveTransformFrame(std::string_view child_frame_id) {
   absl::WriterMutexLock lock(&frame_mutex_);
   // Get the compact id.
   const CompactFrameID cfid = LookupFrameNumber(child_frame_id);
@@ -842,17 +925,15 @@ absl::Status BufferCore::CheckCommonTimeInterval(
     auto& oc = *common_interval.oldest_limiter;
     return absl::UnavailableError(absl::StrCat(
         "Disjoint time intervals! Link between '",
-        *LookupFrameString(*lc.GetParent(absl::InfiniteFuture())),
-        "' and '",
+        *LookupFrameString(*lc.GetParent(absl::InfiniteFuture())), "' and '",
         *LookupFrameString(*lc.GetChild(absl::InfiniteFuture())),
-        "' with time-interval [",  absl::FormatTime(lc.GetOldestTimestamp()),
-        ", ",  absl::FormatTime(lc.GetLatestTimestamp()),
+        "' with time-interval [", absl::FormatTime(lc.GetOldestTimestamp()),
+        ", ", absl::FormatTime(lc.GetLatestTimestamp()),
         "] is disjoint from link between '",
-        *LookupFrameString(*oc.GetParent(absl::InfiniteFuture())),
-        "' and '",
+        *LookupFrameString(*oc.GetParent(absl::InfiniteFuture())), "' and '",
         *LookupFrameString(*oc.GetChild(absl::InfiniteFuture())),
-        "' with time-interval [",  absl::FormatTime(oc.GetOldestTimestamp()),
-        ", ",  absl::FormatTime(oc.GetLatestTimestamp()), "]."));
+        "' with time-interval [", absl::FormatTime(oc.GetOldestTimestamp()),
+        ", ", absl::FormatTime(oc.GetLatestTimestamp()), "]."));
   }
   return absl::OkStatus();
 }
@@ -898,8 +979,7 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
     }
 
     auto status_or_parent = cache->GetParent(absl::InfiniteFuture());
-    if (!status_or_parent.ok() ||
-        *status_or_parent == kRootFrameId) {
+    if (!status_or_parent.ok() || *status_or_parent == kRootFrameId) {
       // Just break out here... there may still be a path from source -> target
       break;
     }
@@ -914,7 +994,11 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
 
     // Early out... target frame is a direct parent of the source frame
     if (frame == target_id) {
-      EIGENMATH_TF2_RETURN_IF_ERROR(CheckCommonTimeInterval(common_interval), absl::StrCat("GetCommonTimeInterval between '", *LookupFrameString(target_id), "' and '", *LookupFrameString(source_id), "'."));
+      EIGENMATH_TF2_RETURN_IF_ERROR(
+          CheckCommonTimeInterval(common_interval),
+          absl::StrCat("GetCommonTimeInterval between '",
+                       *LookupFrameString(target_id), "' and '",
+                       *LookupFrameString(source_id), "'."));
       *oldest_time = common_interval.oldest;
       *latest_time = common_interval.latest;
       return absl::OkStatus();
@@ -942,8 +1026,7 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
     }
 
     auto status_or_parent = cache->GetParent(absl::InfiniteFuture());
-    if (!status_or_parent.ok() ||
-        *status_or_parent == kRootFrameId) {
+    if (!status_or_parent.ok() || *status_or_parent == kRootFrameId) {
       break;
     }
 
@@ -953,11 +1036,11 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
 
     frame = *status_or_parent;
 
-    auto it = std::find_if(
-        source_to_root_links.begin(), source_to_root_links.end(),
-        [&frame](const TimeCacheInterface* rhs) {
-          return *rhs->GetParent(absl::InfiniteFuture()) == frame;
-        });
+    auto it =
+        std::find_if(source_to_root_links.begin(), source_to_root_links.end(),
+                     [&frame](const TimeCacheInterface* rhs) {
+                       return *rhs->GetParent(absl::InfiniteFuture()) == frame;
+                     });
     if (it != source_to_root_links.end()) {  // found a common parent
       common_parent = *(*it)->GetParent(absl::InfiniteFuture());
       break;
@@ -965,7 +1048,11 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
 
     // Early out... source frame is a direct parent of the target frame
     if (frame == source_id) {
-      EIGENMATH_TF2_RETURN_IF_ERROR(CheckCommonTimeInterval(common_interval), absl::StrCat("GetCommonTimeInterval between '", *LookupFrameString(target_id), "' and '", *LookupFrameString(source_id), "'."));
+      EIGENMATH_TF2_RETURN_IF_ERROR(
+          CheckCommonTimeInterval(common_interval),
+          absl::StrCat("GetCommonTimeInterval between '",
+                       *LookupFrameString(target_id), "' and '",
+                       *LookupFrameString(source_id), "'."));
       *oldest_time = common_interval.oldest;
       *latest_time = common_interval.latest;
       return absl::OkStatus();
@@ -980,12 +1067,11 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
   }
 
   if (common_parent == kRootFrameId) {
-    return absl::InternalError(
-        absl::StrCat("Could not find a connection between '",
-                     *LookupFrameString(target_id), "' and '",
-                     *LookupFrameString(source_id),
-                     "' because they are not part of the same tree.",
-                     " Tf has two or more unconnected trees."));
+    return absl::InternalError(absl::StrCat(
+        "Could not find a connection between '", *LookupFrameString(target_id),
+        "' and '", *LookupFrameString(source_id),
+        "' because they are not part of the same tree.",
+        " Tf has two or more unconnected trees."));
   }
 
   // Loop through the source -> root list until we hit the common parent
@@ -994,13 +1080,16 @@ absl::Status BufferCore::GetCommonTimeInterval(CompactFrameID target_id,
       common_interval.Update(link_cache);
     }
 
-    if (*link_cache->GetParent(absl::InfiniteFuture()) ==
-        common_parent) {
+    if (*link_cache->GetParent(absl::InfiniteFuture()) == common_parent) {
       break;
     }
   }
 
-  EIGENMATH_TF2_RETURN_IF_ERROR(CheckCommonTimeInterval(common_interval), absl::StrCat("GetCommonTimeInterval between '", *LookupFrameString(target_id), "' and '", *LookupFrameString(source_id), "'."));
+  EIGENMATH_TF2_RETURN_IF_ERROR(
+      CheckCommonTimeInterval(common_interval),
+      absl::StrCat("GetCommonTimeInterval between '",
+                   *LookupFrameString(target_id), "' and '",
+                   *LookupFrameString(source_id), "'."));
   *oldest_time = common_interval.oldest;
   *latest_time = common_interval.latest;
   return absl::OkStatus();
@@ -1029,7 +1118,8 @@ std::string BufferCore::AllFramesAsYAML(absl::Time query_time) const {
 
     const double rate =
         frame->GetBufferSize() /
-        std::max((absl::ToDoubleSeconds(frame->GetLatestTimestamp() - frame->GetOldestTimestamp())),
+        std::max((absl::ToDoubleSeconds(frame->GetLatestTimestamp() -
+                                        frame->GetOldestTimestamp())),
                  0.0001);
 
     mstream << std::fixed;  // fixed point notation
@@ -1041,9 +1131,9 @@ std::string BufferCore::AllFramesAsYAML(absl::Time query_time) const {
             << "'\n";
     mstream << "  rate: " << rate << std::endl;
     mstream << "  most_recent_transform: "
-            <<  absl::FormatTime(frame->GetLatestTimestamp()) << std::endl;
+            << absl::FormatTime(frame->GetLatestTimestamp()) << std::endl;
     mstream << "  oldest_transform: "
-            <<  absl::FormatTime(frame->GetOldestTimestamp()) << std::endl;
+            << absl::FormatTime(frame->GetOldestTimestamp()) << std::endl;
     if (query_time != absl::InfiniteFuture()) {
       mstream << "  transform_delay: "
               << absl::FormatDuration(query_time - frame->GetLatestTimestamp())
@@ -1051,7 +1141,7 @@ std::string BufferCore::AllFramesAsYAML(absl::Time query_time) const {
     }
     mstream << "  buffer_length: "
             << FormatDuration(frame->GetLatestTimestamp() -
-                                frame->GetOldestTimestamp())
+                              frame->GetOldestTimestamp())
             << std::endl;
   }
 

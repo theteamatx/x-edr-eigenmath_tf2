@@ -34,12 +34,12 @@
 #include <string>
 #include <vector>
 
-#include "eigenmath/pose2.h"
-#include "eigenmath/pose3.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
+#include "eigenmath/pose2.h"
+#include "eigenmath/pose3.h"
 #include "third_party/eigenmath_tf2/time_cache.h"
 #include "third_party/eigenmath_tf2/transform_storage.h"
 
@@ -101,9 +101,9 @@ class BufferCore {
   // desired transform.
   // \return true unless an error occurred
   absl::Status SetTransform(
-      const Pose3d& pose, absl::Time stamp,
-      std::string_view parent_frame_id, std::string_view child_frame_id,
-      std::string_view authority, bool is_static = false,
+      const Pose3d& pose, absl::Time stamp, std::string_view parent_frame_id,
+      std::string_view child_frame_id, std::string_view authority,
+      bool is_static = false,
       absl::Duration max_interpolation_duration = absl::InfiniteDuration(),
       bool invert_when_interpolating = false) ABSL_LOCKS_EXCLUDED(frame_mutex_);
 
@@ -162,8 +162,7 @@ class BufferCore {
   absl::StatusOr<Pose3d> LookupTransform(
       std::string_view target_frame, const absl::Time& target_time,
       std::string_view source_frame, const absl::Time& source_time,
-      std::string_view fixed_frame,
-      absl::Time* target_transform_time = nullptr,
+      std::string_view fixed_frame, absl::Time* target_transform_time = nullptr,
       absl::Time* source_transform_time = nullptr) const
       ABSL_LOCKS_EXCLUDED(frame_mutex_);
 
@@ -280,11 +279,9 @@ class BufferCore {
   TimeCacheInterface* GetOrAllocateFrame(CompactFrameID cfid, bool is_static)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(frame_mutex_);
 
-  absl::Status CheckFrameId(
-      std::string_view frame_id) const;
+  absl::Status CheckFrameId(std::string_view frame_id) const;
   absl::StatusOr<CompactFrameID> ValidatedFrameId(
-      std::string_view frame_id) const
-      ABSL_SHARED_LOCKS_REQUIRED(frame_mutex_);
+      std::string_view frame_id) const ABSL_SHARED_LOCKS_REQUIRED(frame_mutex_);
 
   // String to number for frame lookup with dynamic allocation of new frames
   CompactFrameID LookupFrameNumber(std::string_view frameid_str) const

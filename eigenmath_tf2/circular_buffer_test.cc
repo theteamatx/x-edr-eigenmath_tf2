@@ -58,12 +58,16 @@ MATCHER_P2(PairIs, first, second, "") {
 
 template <typename C>
 void PushBackSequence(C* c, int lo, int hi) {
-  for (; lo != hi; ++lo) { c->push_back(lo); }
+  for (; lo != hi; ++lo) {
+    c->push_back(lo);
+  }
 }
 
 template <typename C>
 void PushFrontSequence(C* c, int lo, int hi) {
-  for (; lo != hi; ++lo) { c->push_front(lo); }
+  for (; lo != hi; ++lo) {
+    c->push_front(lo);
+  }
 }
 
 template <typename C>
@@ -179,7 +183,9 @@ TEST_F(CircularBufferTest, PushFront) {
   EXPECT_EQ(2, cb.at(2));
   // Test mutating.
   typedef CircularBuffer<int>::iterator Iter;
-  for (Iter ii = cb.begin(); ii != cb.end(); ++ii) { *ii *= 2; }
+  for (Iter ii = cb.begin(); ii != cb.end(); ++ii) {
+    *ii *= 2;
+  }
   EXPECT_THAT(cb, ElementsAre(8, 6, 4));
 }
 
@@ -223,7 +229,7 @@ TEST_F(CircularBufferTest, ResizingSmaller) {
 }
 
 TEST_F(CircularBufferTest, CanBePutIntoMaps) {
-  std::map<int, CircularBuffer<int> > m;
+  std::map<int, CircularBuffer<int>> m;
   m[0] = CircularBuffer<int>();
 }
 
@@ -235,8 +241,10 @@ TEST_F(CircularBufferTest, EmptyConstruction) {
 
 TEST_F(CircularBufferTest, PartiallyFilledLifetimes) {
   CircularBuffer<Canary> cb(3);
-  cb.push_back(Canary(1)); EXPECT_EQ(1, count());
-  cb.push_back(Canary(2)); EXPECT_EQ(2, count());
+  cb.push_back(Canary(1));
+  EXPECT_EQ(1, count());
+  cb.push_back(Canary(2));
+  EXPECT_EQ(2, count());
   cb.clear();
   EXPECT_TRUE(cb.empty());
   EXPECT_EQ(0, count());
@@ -245,9 +253,12 @@ TEST_F(CircularBufferTest, PartiallyFilledLifetimes) {
 TEST_F(CircularBufferTest, ClearDestruction) {
   // Test that a cleared CircularBuffer has no live elements.
   CircularBuffer<Canary> cb(2);
-  cb.push_back(Canary(1)); EXPECT_EQ(1, count());
-  cb.push_back(Canary(2)); EXPECT_EQ(2, count());
-  cb.push_back(Canary(3)); EXPECT_EQ(2, count());
+  cb.push_back(Canary(1));
+  EXPECT_EQ(1, count());
+  cb.push_back(Canary(2));
+  EXPECT_EQ(2, count());
+  cb.push_back(Canary(3));
+  EXPECT_EQ(2, count());
   cb.clear();
   EXPECT_TRUE(cb.empty());
   EXPECT_EQ(0, count());
@@ -258,8 +269,12 @@ TEST_F(CircularBufferTest, AllBeginPositionsPushBack) {
     SCOPED_TRACE(i);
     CircularBuffer<Canary> cb(3);
     // Rotate 'begin_' up to position i:
-    for (int j = 0; j < i; ++j) { cb.push_back(Canary(j)); }
-    for (int j = 0; j < i; ++j) { cb.pop_front(); }
+    for (int j = 0; j < i; ++j) {
+      cb.push_back(Canary(j));
+    }
+    for (int j = 0; j < i; ++j) {
+      cb.pop_front();
+    }
     cb.push_back(Canary(10));
     EXPECT_THAT(cb, ElementsAre(Canary(10)));
     cb.pop_back();
@@ -267,7 +282,8 @@ TEST_F(CircularBufferTest, AllBeginPositionsPushBack) {
   }
 }
 
-template <typename T> void Accept(const T& x) {}
+template <typename T>
+void Accept(const T& x) {}
 
 // The default constructor makes a CircularBuffer of capacity 0.
 // It has to be resized before it can hold elements, but it should
@@ -313,8 +329,12 @@ TEST_F(CircularBufferTest, AllBeginPositionsPushFront) {
     SCOPED_TRACE(i);
     CircularBuffer<Canary> cb(3);
     // Rotate 'begin_' up to position i:
-    for (int j = 0; j < i; ++j) { cb.push_back(Canary(j)); }
-    for (int j = 0; j < i; ++j) { cb.pop_front(); }
+    for (int j = 0; j < i; ++j) {
+      cb.push_back(Canary(j));
+    }
+    for (int j = 0; j < i; ++j) {
+      cb.pop_front();
+    }
     cb.push_front(Canary(10));
     EXPECT_THAT(cb, ElementsAre(Canary(10)));
     cb.pop_front();
@@ -326,7 +346,9 @@ TEST(CircularBufferIteratorTest, Iterators) {
   CircularBuffer<int> cb(10);
   // Position begin() roughly in the middle
   PushFrontSequence(&cb, 0, 7);
-  for (int i = 0; i < 6; i++) { cb.pop_back(); }
+  for (int i = 0; i < 6; i++) {
+    cb.pop_back();
+  }
   // Fill up the circular buffer
   PushFrontSequence(&cb, 0, 10);
   CircularBuffer<int>::iterator ibegin = cb.begin();
@@ -513,8 +535,7 @@ BENCHMARK(BM_Moves);
 CircularBuffer<std::string> MakeBuf() {
   auto cb = CircularBuffer<std::string>(100);
   std::string s(100, 'x');
-  for (size_t b = 0; b < cb.capacity(); ++b)
-    cb.push_back(s);
+  for (size_t b = 0; b < cb.capacity(); ++b) cb.push_back(s);
   return cb;
 }
 
@@ -526,8 +547,7 @@ void BM_MoveVector(benchmark::State& state) {
 
     // Put all the values back in 'src'.
     std::copy(std::make_move_iterator(v.begin()),
-              std::make_move_iterator(v.end()),
-              src.begin());
+              std::make_move_iterator(v.end()), src.begin());
   }
 }
 BENCHMARK(BM_MoveVector);

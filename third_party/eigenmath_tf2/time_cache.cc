@@ -29,11 +29,11 @@
 
 #include "third_party/eigenmath_tf2/time_cache.h"
 
-#include "absl/time/time.h"
-#include "eigenmath/interpolation.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
+#include "eigenmath/interpolation.h"
 
 namespace eigenmath {
 namespace tf2 {
@@ -48,7 +48,8 @@ bool IsApproxEqual(absl::Time t0, absl::Time t1, absl::Duration tolerance) {
 
 TimeCacheInterface::~TimeCacheInterface() = default;
 
-const absl::Duration TimeCache::kMinInterpolationDistance = absl::Nanoseconds(5);
+const absl::Duration TimeCache::kMinInterpolationDistance =
+    absl::Nanoseconds(5);
 const absl::Duration TimeCache::kDefaultCacheTime = absl::Seconds(10);
 
 TimeCache::TimeCache(absl::Duration max_storage_time)
@@ -146,14 +147,14 @@ void TimeCache::Interpolate(const TransformStorage& one,
     return;
   }
   // Calculate the ratio
-  const double ratio =
-       absl::ToDoubleSeconds(time - one.stamp_) /  absl::ToDoubleSeconds(two.stamp_ - one.stamp_);
+  const double ratio = absl::ToDoubleSeconds(time - one.stamp_) /
+                       absl::ToDoubleSeconds(two.stamp_ - one.stamp_);
 
   // Interpolate pose (uses slerp for rotation)
   if (one.invert_when_interpolating_) {
-    output->pose_ =
-        ::eigenmath::Interpolate(ratio, one.pose_.inverse(), two.pose_.inverse())
-            .inverse();
+    output->pose_ = ::eigenmath::Interpolate(ratio, one.pose_.inverse(),
+                                             two.pose_.inverse())
+                        .inverse();
   } else {
     output->pose_ = ::eigenmath::Interpolate(ratio, one.pose_, two.pose_);
   }
@@ -271,8 +272,8 @@ int TimeCache::GetBufferSize() const { return storage_.size(); }
 
 TimeIntervalAndFrameID TimeCache::GetTimeIntervalAndParent() const {
   if (storage_.empty()) {
-    return std::make_pair(TimeInterval{absl::InfiniteFuture(), absl::InfiniteFuture()},
-                          0);
+    return std::make_pair(
+        TimeInterval{absl::InfiniteFuture(), absl::InfiniteFuture()}, 0);
   }
 
   const auto& ts = storage_.front();
@@ -334,14 +335,18 @@ absl::StatusOr<CompactFrameID> StaticCache::GetChild(absl::Time time) const {
 }
 
 TimeIntervalAndFrameID StaticCache::GetTimeIntervalAndParent() const {
-  return std::make_pair(TimeInterval{absl::InfinitePast(), absl::InfiniteFuture()},
-                        storage_.parent_frame_id_);
+  return std::make_pair(
+      TimeInterval{absl::InfinitePast(), absl::InfiniteFuture()},
+      storage_.parent_frame_id_);
 }
 
-absl::Time StaticCache::GetLatestTimestamp() const { return absl::InfiniteFuture(); }
+absl::Time StaticCache::GetLatestTimestamp() const {
+  return absl::InfiniteFuture();
+}
 
-absl::Time StaticCache::GetOldestTimestamp() const { return absl::InfinitePast(); }
+absl::Time StaticCache::GetOldestTimestamp() const {
+  return absl::InfinitePast();
+}
 
 }  // namespace tf2
 }  // namespace eigenmath
-

@@ -71,4 +71,3 @@ class TransformStorage {
 }  // namespace eigenmath
 
 #endif  // EIGENMATH_TF2_EIGENMATH_TF2_TRANSFORM_STORAGE_H_
-

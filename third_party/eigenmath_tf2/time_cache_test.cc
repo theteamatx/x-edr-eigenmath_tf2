@@ -78,7 +78,9 @@ TEST_F(TimeCacheTest, Repeatability) {
   }
 
   for (int i = 1; i < kRuns; i++) {
-    auto stor_or_status = cache.GetData(absl::FromUnixMillis(i)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+    auto stor_or_status = cache.GetData(absl::FromUnixMillis(i));
+    ASSERT_TRUE(stor_or_status.ok());
+    stor = *stor_or_status;
     EXPECT_EQ(stor.parent_frame_id_, i);
     EXPECT_EQ(stor.stamp_, absl::FromUnixMillis(i));
   }
@@ -106,7 +108,9 @@ TEST_F(TimeCacheTest, RepeatabilityReverseInsertOrder) {
     EXPECT_TRUE(cache.InsertData(stor));
   }
   for (int i = 1; i < kRuns; i++) {
-    auto stor_or_status = cache.GetData(absl::FromUnixMillis(i)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+    auto stor_or_status = cache.GetData(absl::FromUnixMillis(i));
+    ASSERT_TRUE(stor_or_status.ok());
+    stor = *stor_or_status;
     EXPECT_EQ(stor.parent_frame_id_, i);
     EXPECT_EQ(stor.stamp_, absl::FromUnixMillis(i));
   }
@@ -131,12 +135,16 @@ TEST_F(TimeCacheTest, ZeroAtFront) {
   EXPECT_TRUE(cache.InsertData(stor));
 
   for (int i = 1; i < kRuns; i++) {
-    auto stor_or_status_0 = cache.GetData(absl::FromUnixMillis(i)); ASSERT_TRUE(stor_or_status_0.ok()); stor = *stor_or_status_0;
+    auto stor_or_status_0 = cache.GetData(absl::FromUnixMillis(i));
+    ASSERT_TRUE(stor_or_status_0.ok());
+    stor = *stor_or_status_0;
     EXPECT_EQ(stor.parent_frame_id_, i);
     EXPECT_EQ(stor.stamp_, absl::FromUnixMillis(i));
   }
 
-  auto stor_or_status_1 = cache.GetData(absl::InfiniteFuture()); ASSERT_TRUE(stor_or_status_1.ok()); stor = *stor_or_status_1;
+  auto stor_or_status_1 = cache.GetData(absl::InfiniteFuture());
+  ASSERT_TRUE(stor_or_status_1.ok());
+  stor = *stor_or_status_1;
   EXPECT_EQ(stor.parent_frame_id_, kRuns);
   EXPECT_EQ(stor.stamp_, absl::FromUnixMillis(kRuns));
 
@@ -145,7 +153,9 @@ TEST_F(TimeCacheTest, ZeroAtFront) {
   EXPECT_TRUE(cache.InsertData(stor));
 
   // Make sure we get a different value now that a new values is added
-  auto stor_or_status_2 = cache.GetData(absl::InfiniteFuture()); ASSERT_TRUE(stor_or_status_2.ok()); stor = *stor_or_status_2;
+  auto stor_or_status_2 = cache.GetData(absl::InfiniteFuture());
+  ASSERT_TRUE(stor_or_status_2.ok());
+  stor = *stor_or_status_2;
   EXPECT_EQ(stor.parent_frame_id_, kRuns);
   EXPECT_EQ(stor.stamp_, absl::FromUnixMillis(kRuns + 1));
 }
@@ -178,7 +188,9 @@ TEST_F(TimeCacheTest, CartesianInterpolation) {
     }
 
     for (int pos = 0; pos < 100; pos++) {
-      auto stor_or_status = cache.GetData(absl::FromUnixMillis(offset + pos)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+      auto stor_or_status = cache.GetData(absl::FromUnixMillis(offset + pos));
+      ASSERT_TRUE(stor_or_status.ok());
+      stor = *stor_or_status;
       double x_out = stor.pose_.translation().x();
       double y_out = stor.pose_.translation().y();
       double z_out = stor.pose_.translation().z();
@@ -220,7 +232,9 @@ TEST_F(TimeCacheTest, ReparentingInterpolationProtection) {
   }
 
   for (int pos = 0; pos < 100; pos++) {
-    auto stor_or_status = cache.GetData(absl::FromUnixMillis(kOffset + pos)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+    auto stor_or_status = cache.GetData(absl::FromUnixMillis(kOffset + pos));
+    ASSERT_TRUE(stor_or_status.ok());
+    stor = *stor_or_status;
     double x_out = stor.pose_.translation().x();
     double y_out = stor.pose_.translation().y();
     double z_out = stor.pose_.translation().z();
@@ -253,11 +267,12 @@ TEST_F(TimeCacheTest, AngularInterpolation) {
     }
 
     for (int pos = 0; pos < 100; pos++) {
-      auto stor_or_status = cache.GetData(absl::FromUnixMillis(kOffset + pos)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;  // get the transform for the position
+      auto stor_or_status = cache.GetData(absl::FromUnixMillis(kOffset + pos));
+      ASSERT_TRUE(stor_or_status.ok());
+      stor = *stor_or_status;  // get the transform for the position
 
       // Generate a ground truth quaternion directly calling slerp
-      SO3d ground_truth(
-          Interpolate(pos / 100.0, quats[0], quats[1]));
+      SO3d ground_truth(Interpolate(pos / 100.0, quats[0], quats[1]));
 
       // Make sure the transformed one and the direct call match
       EXPECT_TRUE(stor.pose_.so3().isApprox(ground_truth, kEpsilon));
@@ -271,7 +286,8 @@ TEST_F(TimeCacheTest, GetDataOnEmptyCache) {
   TimeCache cache;
 
   EXPECT_FALSE(cache.HasData(absl::FromUnixMillis(1)));
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(),
+            absl::StatusCode::kOutOfRange);
   auto ts_and_fr_id = cache.GetTimeIntervalAndParent();
   EXPECT_EQ(ts_and_fr_id.first.oldest, absl::InfiniteFuture());
   EXPECT_EQ(ts_and_fr_id.first.latest, absl::InfiniteFuture());
@@ -291,10 +307,12 @@ TEST_F(TimeCacheTest, GetDataOnSingleElementCache) {
   EXPECT_TRUE(cache.InsertData(stor));
 
   EXPECT_FALSE(cache.HasData(absl::FromUnixMillis(3)));
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(3)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(3)).status().code(),
+            absl::StatusCode::kOutOfRange);
 
   EXPECT_FALSE(cache.HasData(absl::FromUnixMillis(1)));
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(),
+            absl::StatusCode::kOutOfRange);
 
   EXPECT_TRUE(cache.GetData(absl::FromUnixMillis(2)).ok());
 }
@@ -311,9 +329,11 @@ TEST_F(TimeCacheTest, GetDataInFutureAndPast) {
   stor.stamp_ = absl::FromUnixMillis(3);
   EXPECT_TRUE(cache.InsertData(stor));
 
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(4)).status().code(), absl::StatusCode::kUnavailable);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(4)).status().code(),
+            absl::StatusCode::kUnavailable);
 
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(),
+            absl::StatusCode::kOutOfRange);
 
   EXPECT_TRUE(cache.GetData(absl::FromUnixMillis(2)).ok());
 }
@@ -336,15 +356,18 @@ TEST_F(TimeCacheTest, GetDataWithMaxInterpolationDuration) {
   EXPECT_TRUE(cache.InsertData(stor));
 
   EXPECT_TRUE(cache.GetData(absl::FromUnixMillis(1200)).ok());
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1700)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1700)).status().code(),
+            absl::StatusCode::kOutOfRange);
   EXPECT_TRUE(cache.GetData(absl::FromUnixMillis(2200)).ok());
 
   EXPECT_TRUE(cache.GetParent(absl::FromUnixMillis(1200)).ok());
-  EXPECT_EQ(cache.GetParent(absl::FromUnixMillis(1700)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetParent(absl::FromUnixMillis(1700)).status().code(),
+            absl::StatusCode::kOutOfRange);
   EXPECT_TRUE(cache.GetParent(absl::FromUnixMillis(2200)).ok());
 
   EXPECT_TRUE(cache.GetChild(absl::FromUnixMillis(1200)).ok());
-  EXPECT_EQ(cache.GetChild(absl::FromUnixMillis(1700)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetChild(absl::FromUnixMillis(1700)).status().code(),
+            absl::StatusCode::kOutOfRange);
   EXPECT_TRUE(cache.GetChild(absl::FromUnixMillis(2200)).ok());
 }
 
@@ -359,7 +382,9 @@ TEST_F(TimeCacheTest, DuplicateEntries) {
   EXPECT_TRUE(cache.InsertData(stor));
   EXPECT_TRUE(cache.InsertData(stor));
 
-  auto stor_or_status = cache.GetData(absl::FromUnixMillis(1)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+  auto stor_or_status = cache.GetData(absl::FromUnixMillis(1));
+  ASSERT_TRUE(stor_or_status.ok());
+  stor = *stor_or_status;
 
   EXPECT_TRUE(!std::isnan(stor.pose_.translation().x()));
   EXPECT_TRUE(!std::isnan(stor.pose_.translation().y()));
@@ -382,7 +407,9 @@ TEST_F(TimeCacheTest, NearDuplicateEntries) {
   stor.stamp_ = absl::FromUnixNanos(3);
   EXPECT_TRUE(cache.InsertData(stor));
 
-  auto stor_or_status = cache.GetData(absl::FromUnixNanos(2)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+  auto stor_or_status = cache.GetData(absl::FromUnixNanos(2));
+  ASSERT_TRUE(stor_or_status.ok());
+  stor = *stor_or_status;
 
   EXPECT_TRUE(!std::isnan(stor.pose_.translation().x()));
   EXPECT_TRUE(!std::isnan(stor.pose_.translation().y()));
@@ -414,7 +441,9 @@ TEST(StaticCache, Repeatability) {
     EXPECT_EQ(cache.GetLatestTimestamp(), absl::InfiniteFuture());
     EXPECT_EQ(cache.GetOldestTimestamp(), absl::InfinitePast());
 
-    auto stor_or_status = cache.GetData(absl::FromUnixMillis(i)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+    auto stor_or_status = cache.GetData(absl::FromUnixMillis(i));
+    ASSERT_TRUE(stor_or_status.ok());
+    stor = *stor_or_status;
     EXPECT_EQ(stor.parent_frame_id_, i);
     EXPECT_EQ(stor.stamp_, absl::FromUnixMillis(i));
   }
@@ -431,7 +460,9 @@ TEST(StaticCache, DuplicateEntries) {
   EXPECT_TRUE(cache.InsertData(stor));
   EXPECT_TRUE(cache.InsertData(stor));
 
-  auto stor_or_status = cache.GetData(absl::FromUnixMillis(1)); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+  auto stor_or_status = cache.GetData(absl::FromUnixMillis(1));
+  ASSERT_TRUE(stor_or_status.ok());
+  stor = *stor_or_status;
 
   EXPECT_TRUE(!std::isnan(stor.pose_.translation().x()));
   EXPECT_TRUE(!std::isnan(stor.pose_.translation().y()));
@@ -457,7 +488,8 @@ TEST_F(TimeCacheTest, PruneStorage) {
   EXPECT_TRUE(cache.InsertData(stor));
 
   // Check pruning of old data:
-  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(), absl::StatusCode::kOutOfRange);
+  EXPECT_EQ(cache.GetData(absl::FromUnixMillis(1)).status().code(),
+            absl::StatusCode::kOutOfRange);
   // Check pruning conserved last data point older than cache time:
   EXPECT_TRUE(cache.GetData(absl::FromUnixMillis(2)).ok());
 
@@ -465,7 +497,9 @@ TEST_F(TimeCacheTest, PruneStorage) {
   EXPECT_TRUE(cache.InsertData(stor));
 
   // Check pruning conserved last data point older than cache time:
-  EXPECT_TRUE(cache.GetData(TimeCache::kDefaultCacheTime + absl::FromUnixMillis(3)).ok());
+  EXPECT_TRUE(
+      cache.GetData(TimeCache::kDefaultCacheTime + absl::FromUnixMillis(3))
+          .ok());
 }
 
 class InvertWhenInterpolatingTest : public TimeCacheTest,
@@ -479,14 +513,12 @@ TEST_P(InvertWhenInterpolatingTest, InvertWhenInterpolating) {
   stor_a.max_interpolation_duration_ = absl::InfiniteDuration();
   // Pick transforms where pose_.translation() and the relative orientation
   // is large.
-  stor_a.pose_ =
-      Pose3d(Vector3d{1000, 1000, 1000}).inverse();
+  stor_a.pose_ = Pose3d(Vector3d{1000, 1000, 1000}).inverse();
   TransformStorage stor_b = stor_a;
   stor_b.stamp_ = absl::FromUnixSeconds(101);
-  stor_b.pose_ =
-      Pose3d(SO3d{M_PI / 4, M_PI / 4, M_PI / 4},
+  stor_b.pose_ = Pose3d(SO3d{M_PI / 4, M_PI / 4, M_PI / 4},
                         Vector3d{1000.1, 1000.1, 1000.1})
-          .inverse();
+                     .inverse();
 
   const bool invert_when_interpolating = GetParam();
 
@@ -511,9 +543,13 @@ TEST_P(InvertWhenInterpolatingTest, InvertWhenInterpolating) {
   for (absl::Time stamp = stor_a.stamp_ + dt; stamp < stor_b.stamp_;
        stamp = stamp + dt) {
     TransformStorage stor_inverted;
-    auto stor_inverted_or_status = cache_inverted.GetData(stamp); ASSERT_TRUE(stor_inverted_or_status.ok()); stor_inverted = *stor_inverted_or_status;
+    auto stor_inverted_or_status = cache_inverted.GetData(stamp);
+    ASSERT_TRUE(stor_inverted_or_status.ok());
+    stor_inverted = *stor_inverted_or_status;
     TransformStorage stor;
-    auto stor_or_status = cache.GetData(stamp); ASSERT_TRUE(stor_or_status.ok()); stor = *stor_or_status;
+    auto stor_or_status = cache.GetData(stamp);
+    ASSERT_TRUE(stor_or_status.ok());
+    stor = *stor_or_status;
     if (invert_when_interpolating) {
       EXPECT_THAT(stor.pose_, IsApprox(stor_inverted.pose_.inverse()));
     } else {

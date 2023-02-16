@@ -32,10 +32,10 @@
 
 #include <memory>
 
-#include "eigenmath_tf2/circular_buffer.h"
-#include "third_party/eigenmath_tf2/transform_storage.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "eigenmath_tf2/circular_buffer.h"
+#include "third_party/eigenmath_tf2/transform_storage.h"
 
 namespace eigenmath {
 namespace tf2 {
@@ -145,7 +145,7 @@ class StaticCache : public TimeCacheInterface {
   absl::Time GetOldestTimestamp() const override;
 
  private:
-  TransformStorage  storage_;
+  TransformStorage storage_;
 };
 
 }  // namespace tf2

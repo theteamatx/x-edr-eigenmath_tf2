@@ -66,9 +66,9 @@ class CircularBuffer {
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-  CircularBuffer() : CircularBuffer(0) { }
+  CircularBuffer() : CircularBuffer(0) {}
   explicit CircularBuffer(size_type c)
-      : capacity_(c), begin_(0), size_(0), space_(Allocate(capacity_)) { }
+      : capacity_(c), begin_(0), size_(0), space_(Allocate(capacity_)) {}
 
   CircularBuffer(const CircularBuffer& rhs) : CircularBuffer(rhs.capacity_) {
     size_ = rhs.size_;
@@ -196,15 +196,11 @@ class CircularBuffer {
   iterator end() { return iterator(this); }
   const_iterator end() const { return const_iterator(this); }
 
-  reverse_iterator rbegin() {
-    return reverse_iterator(end());
-  }
+  reverse_iterator rbegin() { return reverse_iterator(end()); }
   const_reverse_iterator rbegin() const {
     return const_reverse_iterator(end());
   }
-  reverse_iterator rend() {
-    return reverse_iterator(begin());
-  }
+  reverse_iterator rend() { return reverse_iterator(begin()); }
   const_reverse_iterator rend() const {
     return const_reverse_iterator(begin());
   }
@@ -215,9 +211,7 @@ class CircularBuffer {
   const_reference back() const {
     return space_[logical_to_absolute(size_ - 1)];
   }
-  reference back() {
-    return space_[logical_to_absolute(size_ - 1)];
-  }
+  reference back() { return space_[logical_to_absolute(size_ - 1)]; }
 
   size_type size() const { return size_; }
   size_type capacity() const { return capacity_; }
@@ -316,22 +310,22 @@ class CircularBuffer {
   size_type capacity_;
   size_type begin_;
   size_type size_;
-  value_type *space_;
+  value_type* space_;
 };
 
 // Iterators are invalidated by modification to the circular buffer.
 template <typename T>
 class CircularBufferIterator
     : public genit::IteratorFacade<CircularBufferIterator<T>, T&,
-                            std::random_access_iterator_tag> {
+                                   std::random_access_iterator_tag> {
  private:
   using non_const_value_type = std::remove_const_t<T>;
   using non_const_iter_type = CircularBufferIterator<non_const_value_type>;
 
   using container_type =
       std::conditional_t<std::is_const_v<T>,
-                                const CircularBuffer<non_const_value_type>,
-                                CircularBuffer<T>>;
+                         const CircularBuffer<non_const_value_type>,
+                         CircularBuffer<T>>;
 
   friend class genit::IteratorFacadePrivateAccess<CircularBufferIterator>;
 
