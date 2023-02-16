@@ -1,0 +1,26 @@
+name: "eigenmath_tf2"
+description:
+  "tf2 is the second generation of the transform library, which lets the "
+  "user keep track of multiple coordinate frames over time. tf2 maintains "
+  "the relationship between coordinate frames in a tree structure buffered "
+  "in time, and lets the user transform points, vectors, etc between any two "
+  "coordinate frames at any desired point in time."
+
+third_party {
+  url {
+    type: GIT
+    value: "https://github.com/ros/geometry_experimental/"
+  }
+  version: "5d34903e1f13aa2ab69e5964db38b58810f00a63"
+  last_upgrade_date { year: 2015 month: 11 day: 12 }
+
+  local_modifications:
+    "Ported the original third_party/ros/tf2 library to"
+    " third_party/blue/core/blue_tf2 to remove ROS and Boost dependencies"
+    " and replace them with equivalent code from google3 and blue. "
+    "Moved the code from third_party/blue/core/blue_tf2 to third_party/blue_tf2"
+    " to comply with third_party policy. "
+    "Migrated code to open-source dependencies for Abseil, Eigenmath and Genit. "
+    "Renamed library and namespaces to eigenmath_tf2. "
+}
+
