@@ -3,5 +3,6 @@ bazel-bin
 bazel-eigenmath_tf2
 bazel-out
 bazel-testlogs
+bazel-x-edr-eigenmath_tf2
 
 
