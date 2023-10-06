@@ -26,7 +26,7 @@ cc_library(
         "circular_buffer.h",
     ],
     deps = [
-        "@genit//genit:iterators",
+        "@x_edr_genit//genit:iterators",
     ],
 )
 

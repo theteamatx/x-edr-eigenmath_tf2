@@ -40,7 +40,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
-        "@eigenmath//eigenmath",
+        "@x_edr_eigenmath//eigenmath",
     ],
 )
 
@@ -58,9 +58,9 @@ cc_test(
     srcs = ["time_cache_test.cc"],
     deps = [
         ":eigenmath_tf2",
-        "@eigenmath//eigenmath",
-        "@eigenmath//eigenmath:matchers",
         "@com_google_absl//absl/time",
         "@com_google_googletest//:gtest_main",
+        "@x_edr_eigenmath//eigenmath",
+        "@x_edr_eigenmath//eigenmath:matchers",
     ],
 )

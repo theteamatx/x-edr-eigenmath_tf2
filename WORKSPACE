@@ -1,4 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 http_archive(
   name = "bazel_skylib",
@@ -33,17 +34,29 @@ http_archive(
 http_archive(
     name = "eigen",
     build_file = "//third_party:eigen.BUILD",
+    sha256 = "8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72",
     url = "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz",
     strip_prefix="eigen-3.4.0",
 )
 
-local_repository(
-    name = "genit",
-    path = "third_party/genit",
+# GenIt
+_GENIT_VERSION = "1.0.0"
+http_archive(
+    name = "x_edr_genit",
+    sha256 = "ab1bbb15ecbe86c5c3888a12c56fe88fac416f2f305acaf1bbf7f68c3d429851",
+    strip_prefix = "x-edr-genit-%s" % _GENIT_VERSION,
+    urls = [
+        "https://github.com/theteamatx/x-edr-genit/archive/refs/tags/v%s.tar.gz" % _GENIT_VERSION,
+    ],
 )
 
-local_repository(
-    name = "eigenmath",
-    path = "third_party/eigenmath",
+# Eigenmath
+# TODO Replace with http_archive when eigenmath has a release available.
+git_repository(
+    name = "x_edr_eigenmath",
+    repo_mapping = {
+        "@genit": "@x_edr_genit",
+    },
+    remote = "https://github.com/theteamatx/x-edr-eigenmath.git",
+    branch = "main"
 )
-
