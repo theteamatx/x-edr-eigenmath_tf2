@@ -1,5 +1,4 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 http_archive(
   name = "bazel_skylib",
@@ -51,12 +50,12 @@ http_archive(
 )
 
 # Eigenmath
-# TODO Replace with http_archive when eigenmath has a release available.
-git_repository(
+_EIGENMATH_VERSION = "1.0.0"
+http_archive(
     name = "x_edr_eigenmath",
-    repo_mapping = {
-        "@genit": "@x_edr_genit",
-    },
-    remote = "https://github.com/theteamatx/x-edr-eigenmath.git",
-    branch = "main"
+    sha256 = "180bf186214b37190e3f26204a271d214b503b25bd22d4228d8f32e7c7151e05",
+    strip_prefix = "x-edr-eigenmath-%s" % _EIGENMATH_VERSION,
+    urls = [
+        "https://github.com/theteamatx/x-edr-eigenmath/archive/refs/tags/v%s.tar.gz" % _EIGENMATH_VERSION,
+    ],
 )
