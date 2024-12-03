@@ -33,13 +33,13 @@ cc_library(
     ],
     deps = [
         "//eigenmath_tf2:circular_buffer",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/hash",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/time",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
         "@x_edr_eigenmath//eigenmath",
     ],
     strip_include_prefix = "//third_party",
@@ -50,7 +50,7 @@ cc_test(
     srcs = ["buffer_core_test.cc"],
     deps = [
         ":eigenmath_tf2",
-        "@googletest//:gtest_main",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -59,8 +59,8 @@ cc_test(
     srcs = ["time_cache_test.cc"],
     deps = [
         ":eigenmath_tf2",
-        "@abseil-cpp//absl/time",
-        "@googletest//:gtest_main",
+        "@com_google_absl//absl/time",
+        "@com_google_googletest//:gtest_main",
         "@x_edr_eigenmath//eigenmath",
         "@x_edr_eigenmath//eigenmath:matchers",
     ],
