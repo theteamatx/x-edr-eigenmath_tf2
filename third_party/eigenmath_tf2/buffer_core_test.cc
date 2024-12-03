@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/eigenmath_tf2/buffer_core.h"
+#include "eigenmath_tf2/buffer_core.h"
 
 #include <cmath>
 
@@ -35,8 +35,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 namespace {
 
 TEST(BufferCoreTest, SetTransform_FailCases) {
@@ -497,5 +496,4 @@ TEST(BufferCoreTest, CollectAllTransforms) {
 }
 
 }  // namespace
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2

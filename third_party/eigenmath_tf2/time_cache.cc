@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/eigenmath_tf2/time_cache.h"
+#include "eigenmath_tf2/time_cache.h"
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -35,8 +35,7 @@
 #include "absl/time/time.h"
 #include "eigenmath/interpolation.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 
 namespace {
 
@@ -348,5 +347,4 @@ absl::Time StaticCache::GetOldestTimestamp() const {
   return absl::InfinitePast();
 }
 
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2

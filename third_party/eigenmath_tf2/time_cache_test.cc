@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/eigenmath_tf2/time_cache.h"
+#include "eigenmath_tf2/time_cache.h"
 
 #include <cmath>
 
@@ -35,15 +35,14 @@
 #include "eigenmath/interpolation.h"
 #include "eigenmath/matchers.h"
 #include "eigenmath/rotation_utils.h"
+#include "eigenmath_tf2/transform_storage.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "third_party/eigenmath_tf2/transform_storage.h"
 
 using ::eigenmath::testing::IsApprox;
 using ::testing::Not;
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 namespace {
 
 class TimeCacheTest : public ::testing::Test {
@@ -561,5 +560,4 @@ INSTANTIATE_TEST_SUITE_P(InvertWhenInterpolatingFlag,
                          InvertWhenInterpolatingTest, ::testing::Bool());
 
 }  // namespace
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2

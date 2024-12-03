@@ -40,11 +40,10 @@
 #include "absl/synchronization/mutex.h"
 #include "eigenmath/pose2.h"
 #include "eigenmath/pose3.h"
-#include "third_party/eigenmath_tf2/time_cache.h"
-#include "third_party/eigenmath_tf2/transform_storage.h"
+#include "eigenmath_tf2/time_cache.h"
+#include "eigenmath_tf2/transform_storage.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 
 // A Class which provides coordinate transforms between any two frames
 // in a system.
@@ -336,7 +335,6 @@ class BufferCore {
       ABSL_SHARED_LOCKS_REQUIRED(frame_mutex_);
 };
 
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2
 
 #endif  // EIGENMATH_TF2_EIGENMATH_TF2_BUFFER_CORE_H_

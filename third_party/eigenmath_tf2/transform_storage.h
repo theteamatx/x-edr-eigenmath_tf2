@@ -33,8 +33,7 @@
 #include "absl/time/time.h"
 #include "eigenmath/pose3.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 
 using CompactFrameID = uint32_t;
 struct TimeInterval {
@@ -67,7 +66,6 @@ class TransformStorage {
   bool invert_when_interpolating_ = false;
 };
 
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2
 
 #endif  // EIGENMATH_TF2_EIGENMATH_TF2_TRANSFORM_STORAGE_H_
