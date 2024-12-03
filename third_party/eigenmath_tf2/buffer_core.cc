@@ -359,8 +359,8 @@ struct TransformAccum {
   TransformAccum() : source_to_top(), target_to_top(), result() {}
 
   absl::StatusOr<CompactFrameID> Gather(const TimeCacheInterface* cache,
-                                        absl::Time time) {
-    EIGENMATH_TF2_ASSIGN_OR_RETURN(st, cache->GetData(time), "");
+                                        absl::Time t) {
+    EIGENMATH_TF2_ASSIGN_OR_RETURN(st, cache->GetData(t), "");
     return st.parent_frame_id_;
   }
 
