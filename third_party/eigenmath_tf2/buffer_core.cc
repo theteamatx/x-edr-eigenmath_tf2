@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "third_party/eigenmath_tf2/buffer_core.h"
+#include "eigenmath_tf2/buffer_core.h"
 
 #include <sstream>
 
@@ -39,11 +39,10 @@
 #include "absl/time/time.h"
 #include "eigenmath/pose3.h"
 #include "eigenmath/pose3_utils.h"
-#include "third_party/eigenmath_tf2/time_cache.h"
-#include "third_party/eigenmath_tf2/transform_storage.h"
+#include "eigenmath_tf2/time_cache.h"
+#include "eigenmath_tf2/transform_storage.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 
 namespace {
 
@@ -360,8 +359,8 @@ struct TransformAccum {
   TransformAccum() : source_to_top(), target_to_top(), result() {}
 
   absl::StatusOr<CompactFrameID> Gather(const TimeCacheInterface* cache,
-                                        absl::Time time) {
-    EIGENMATH_TF2_ASSIGN_OR_RETURN(st, cache->GetData(time), "");
+                                        absl::Time t) {
+    EIGENMATH_TF2_ASSIGN_OR_RETURN(st, cache->GetData(t), "");
     return st.parent_frame_id_;
   }
 
@@ -1183,5 +1182,4 @@ std::string BufferCore::GetFrameAuthority(CompactFrameID c_frame_id) const {
   return it->second;
 }
 
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2

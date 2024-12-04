@@ -33,8 +33,7 @@
 
 #include "genit/iterator_facade.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 
 // Forward declaration.
 template <typename T>
@@ -396,7 +395,6 @@ inline bool operator>=(const CircularBuffer<T>& a, const CircularBuffer<T>& b) {
   return !(a < b);
 }
 
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2
 
 #endif  // EIGENMATH_TF2_EIGENMATH_TF2_CIRCULAR_BUFFER_H_

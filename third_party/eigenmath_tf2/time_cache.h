@@ -35,10 +35,9 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "eigenmath_tf2/circular_buffer.h"
-#include "third_party/eigenmath_tf2/transform_storage.h"
+#include "eigenmath_tf2/transform_storage.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 
 class TimeCacheInterface {
  public:
@@ -148,7 +147,6 @@ class StaticCache : public TimeCacheInterface {
   TransformStorage storage_;
 };
 
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2
 
 #endif  // EIGENMATH_TF2_EIGENMATH_TF2_TIME_CACHE_H_

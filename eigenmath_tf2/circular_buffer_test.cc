@@ -29,8 +29,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-namespace eigenmath {
-namespace tf2 {
+namespace eigenmath::tf2 {
 namespace {
 
 using testing::ElementsAre;
@@ -553,5 +552,4 @@ void BM_MoveVector(benchmark::State& state) {
 BENCHMARK(BM_MoveVector);
 
 }  // namespace
-}  // namespace tf2
-}  // namespace eigenmath
+}  // namespace eigenmath::tf2

@@ -42,6 +42,7 @@ cc_library(
         "@com_google_absl//absl/time",
         "@x_edr_eigenmath//eigenmath",
     ],
+    strip_include_prefix = "//third_party",
 )
 
 cc_test(
