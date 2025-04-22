@@ -1,5 +1,8 @@
 build --cxxopt='-std=c++17'
+
+# Specifically disabled warnings, overly pedantic.
 build --cxxopt='-Wno-sign-compare'
+build --cxxopt='-Wno-sign-conversion'
 
 # Common flags for Clang
 build:clang --action_env=BAZEL_COMPILER=clang
